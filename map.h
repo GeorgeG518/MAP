@@ -15,7 +15,7 @@ typedef struct match{
     int k;
     double cost;
     match(int i, int j, int k, double cost)
-        : i(i),j(j), k(k), cost(cost){}
+        : i(i),j(j), k(k), cost(cost){};
     std::ostream& ijk(std::ostream &o){
         return o << " " << this->i << " " << this->j<< " " << this->k << std::endl;
     }

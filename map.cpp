@@ -83,56 +83,71 @@ std::vector<int> return_possible_picks(const std::vector<match> matches, std::se
 std::forward_list<match> brute_force(const std::vector<match> matches){
     float GLOBAL_MIN_COST = FLT_MAX;
     std::forward_list<match> final_path;
-    int current_node = 0;
     int num_nodes=matches.size();
     for (auto it = matches.begin(); it!=matches.end(); ++it) {
+        // have to keep track of where we are in the tree 
+        int current_depth = 1;
+        int last_depth =1;
+
+        // this allows us to keep constant access in checking
         std::set<int> i_used;
         std::set<int> j_used;
         std::set<int> k_used;
-        std::stack<int> frontier;
+
+        std::stack<std::pair<int,int>> frontier; // push an index and a depth
         std::vector<bool> visited;
         std::vector<match> current_solution;
-        //visited=std::vector<bool>(num_nodes, false);
+        for(int i=0; i<SOLUTION_LENGTH;i++){
+            current_solution.emplace_back(-1,-1,-1,DBL_MAX);
+        }
 
         int match_index=std::distance(matches.begin(),it);
-        frontier.push(match_index);
+        frontier.push({match_index,current_depth});
         while(!frontier.empty()){
             if(DEBUG){
                 std::cout<<"Stack size: " << frontier.size() <<" nodes left to be explored"<<std::endl;
             }
-            int index=frontier.top();
+            std::pair<int,int> pair_info=frontier.top();
+            int index=pair_info.first;
+            current_depth=pair_info.second;
             frontier.pop();         
             match m=matches[index];
-            current_solution.push_back(m);
-            i_used.insert((m).i);
-            j_used.insert((m).j);
-            k_used.insert((m).k);
-            if(valid_path(current_solution)){
+            current_solution[current_depth-1]=m;
+
+            i_used.insert(m.i);
+            j_used.insert(m.j);
+            k_used.insert(m.k);
+            if(current_depth==SOLUTION_LENGTH and valid_path(current_solution)){
                 std::cout<<"Choice Found"<<std::endl;
                 print_vector(current_solution);
+                std::cout<<"Diff in depth: "<<current_depth-last_depth<<std::endl;
                 i_used.erase(m.i);
                 j_used.erase(m.j);
                 k_used.erase(m.k);
-                current_solution.pop_back();
+                current_solution.pop_back();            
                 continue;
-            }else if(current_solution.size()==SOLUTION_LENGTH){ // i.e. it wasn't valid path, but it had right size
+            }else if(current_depth==SOLUTION_LENGTH){ // i.e. it wasn't valid path, but it had right size
                 std::cout<<"Bad Choice Found"<<std::endl;
                 print_vector(current_solution);
                 i_used.erase(m.i);
                 j_used.erase(m.j);
                 k_used.erase(m.k);
-                current_solution.pop_back();                
+                current_solution.pop_back();  
                 continue;
             }
 
             std::vector<int> picks=return_possible_picks(matches, i_used, j_used, k_used);
-
-            for(int pick: picks){
-                if(DEBUG){
-                    std::cout << "Adding pick to queue..." << pick<<std::endl;
+            
+            if(picks.size()!=0){
+                last_depth=current_depth;              
+                for(int pick: picks){
+                    if(DEBUG){
+                        std::cout << "Adding pick to queue..." << pick<<std::endl;
+                    }
+                    frontier.push({pick,current_depth+1});
                 }
-                frontier.push(pick);
             }
+
         }
         break; // only do one node
 
@@ -144,7 +159,7 @@ int main()
 {
     // Seed the random number generator
     std::srand(std::time(0));
-    int SIZE=3;
+    int SIZE=SOLUTION_LENGTH;
     // Declare a SIZExSIZExSIZE matrix
     double max_value = 6000;
     // Fill the matrix with random values
